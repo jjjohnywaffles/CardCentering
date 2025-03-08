@@ -3,47 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <title>Card Centering Tool</title>
+  <!-- Google Font for modern look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 20px;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    /* Wrap the canvas and the info panel so the info panel appears directly below */
-    #canvasWrapper {
-      display: inline-block;
-      text-align: center;
-    }
-    #canvasContainer {
-      position: relative;
-      display: block;
-    }
-    canvas {
-      border: 1px solid #ccc;
-      cursor: crosshair;
-    }
-    /* Info panel placed directly below the canvas */
-    #infoPanel {
-      margin-top: 10px;
-      background: #f9f9f9;
-      padding: 10px;
-      border: 1px solid #ccc;
-      display: block;
-      text-align: center;
-      min-width: 300px;
+    h1 {
+      margin-bottom: 20px;
     }
     .controls {
-      margin: 10px;
+      margin: 15px;
+    }
+    /* Container for canvas and info panel */
+    #canvasWrapper {
+      width: 800px;
+      max-width: 100%;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      transition: border 0.3s;
+    }
+    /* Visual cue for dragover */
+    #canvasWrapper.dragover {
+      border: 2px dashed #888;
+    }
+    #canvasContainer {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    canvas {
+      width: 100%;
+      height: auto;
+      background: #fff;
+      cursor: crosshair;
+    }
+    /* Info panel below the canvas */
+    #infoPanel {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+      min-width: 300px;
     }
   </style>
 </head>
 <body>
   <h1>Card Centering Tool</h1>
-  
-  <!-- Image Upload -->
-  <input type="file" id="fileInput" accept="image/*">
-  
-  <!-- Rotation Slider (centered at 0, range –15° to +15°) -->
+  <!-- Image Upload and Rotation Controls -->
+  <div class="controls">
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
   <div class="controls">
     <label for="rotateSlider">Rotation:</label>
     <input type="range" id="rotateSlider" min="-15" max="15" value="0">
@@ -54,7 +78,7 @@
     <div id="canvasContainer">
       <canvas id="cardCanvas" width="800" height="600"></canvas>
     </div>
-    <!-- Centering Info displayed directly underneath the canvas -->
+    <!-- Centering Info displayed below the canvas -->
     <div id="infoPanel">
       <h3>Centering Info</h3>
       <div id="verticalInfo">Vertical: N/A</div>
@@ -70,33 +94,26 @@
     const angleValue = document.getElementById('angleValue');
     const verticalInfo = document.getElementById('verticalInfo');
     const horizontalInfo = document.getElementById('horizontalInfo');
+    const canvasWrapper = document.getElementById('canvasWrapper');
 
     let cardImage = new Image();
-    let rotationAngle = 0; // slider value in degrees (between -15 and 15)
-    let rad = 0;           // rotation angle in radians
-    let scale = 1;         // scale factor to fit the card in the canvas
+    let rotationAngle = 0; // degrees
+    let rad = 0;           // radians
+    let scale = 1;         // computed scale factor
 
-    // -------------------------------
-    // Measurement borders in the card’s natural (non-rotated) coordinate space.
-    // Outer measurement borders (drawn in high-contrast blue)
+    // Measurement borders (in natural card coordinates)
+    // Outer borders (blue)
     let outerTop, outerBottom, outerLeft, outerRight;
-    // Inner measurement borders (drawn in solid neon yellow)
+    // Inner borders (neon yellow)
     let innerTop, innerBottom, innerLeft, innerRight;
 
-    // Dragging state
+    // Drag state
     let dragging = false;
-    // dragItem will be one of:
-    // "outerTop", "outerBottom", "outerLeft", "outerRight",
-    // "innerTop", "innerBottom", "innerLeft", "innerRight"
-    let dragItem = null;
-    // Increased hit tolerance for easier grabbing:
-    const tolerance = 25;  // pixels for detecting a hit on a line
-    // Enlarged tab size:
-    const tabSize = 15;    // size (in pixels) of the draggable tab
+    let dragItem = null; // e.g., "outerTop", "innerLeft", etc.
+    const tolerance = 25;  // hit tolerance (in natural card coordinates)
+    const tabSize = 15;    // size of draggable tab
 
-    // -------------------------------
-    // Helper: Get the card box (the rectangle where the card is drawn) in canvas coordinates.
-    // This box is centered in the canvas.
+    // Helper: Get card box in canvas coordinates.
     function getCardBox() {
       const cardWidthScaled = cardImage.width * scale;
       const cardHeightScaled = cardImage.height * scale;
@@ -105,53 +122,79 @@
       return { cardX, cardY, cardWidthScaled, cardHeightScaled };
     }
 
-    // -------------------------------
-    // Convert mouse event to card coordinates (non-rotated).
-    // Returns {x, y} in the card's natural coordinate system.
-    function getMousePosInCardCoords(evt) {
+    // Adjust pointer coordinates accounting for canvas CSS scaling.
+    function getCanvasCoords(evt) {
       const rect = canvas.getBoundingClientRect();
-      const x_canvas = evt.clientX - rect.left;
-      const y_canvas = evt.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (evt.clientX - rect.left) * scaleX,
+        y: (evt.clientY - rect.top) * scaleY
+      };
+    }
+
+    // Get mouse position in card's natural coordinates.
+    function getMousePosInCardCoords(evt) {
+      const pos = getCanvasCoords(evt);
       const { cardX, cardY } = getCardBox();
-      const xCard = (x_canvas - cardX) / scale;
-      const yCard = (y_canvas - cardY) / scale;
-      return { x: xCard, y: yCard };
+      return { x: (pos.x - cardX) / scale, y: (pos.y - cardY) / scale };
     }
 
-    // -------------------------------
-    // Helper: Check if the mouse position is within the tab attachment area.
-    // For horizontal lines, the tab is centered at (cardImage.width/2, guideValue).
-    // For vertical lines, the tab is centered at (guideValue, cardImage.height/2).
-    function isWithinTab(pos, guideValue, orientation) {
-      if (orientation === "horizontal") {
-        const centerX = cardImage.width / 2;
-        const centerY = guideValue;
-        return pos.x >= centerX - tabSize/2 && pos.x <= centerX + tabSize/2 &&
-               pos.y >= centerY - tabSize/2 && pos.y <= centerY + tabSize/2;
-      } else if (orientation === "vertical") {
-        const centerX = guideValue;
-        const centerY = cardImage.height / 2;
-        return pos.x >= centerX - tabSize/2 && pos.x <= centerX + tabSize/2 &&
-               pos.y >= centerY - tabSize/2 && pos.y <= centerY + tabSize/2;
+    // Get touch position in card's natural coordinates.
+    function getTouchPosInCardCoords(evt) {
+      evt.preventDefault();
+      const touch = evt.touches[0] || evt.changedTouches[0];
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const pos = {
+        x: (touch.clientX - rect.left) * scaleX,
+        y: (touch.clientY - rect.top) * scaleY
+      };
+      const { cardX, cardY } = getCardBox();
+      return { x: (pos.x - cardX) / scale, y: (pos.y - cardY) / scale };
+    }
+
+    // Helper: Check if a point is in a rectangle.
+    function isInRect(pos, rect) {
+      return pos.x >= rect.x && pos.x <= rect.x + rect.width &&
+             pos.y >= rect.y && pos.y <= rect.y + rect.height;
+    }
+
+    // Helper: Get tab rectangle for a given border.
+    function getTabRect(border) {
+      switch(border) {
+        case "outerTop":
+          return { x: cardImage.width/2 - tabSize/2 - 10, y: outerTop - tabSize/2, width: tabSize, height: tabSize };
+        case "outerBottom":
+          return { x: cardImage.width/2 - tabSize/2 - 10, y: outerBottom - tabSize/2, width: tabSize, height: tabSize };
+        case "innerTop":
+          return { x: cardImage.width/2 - tabSize/2 + 10, y: innerTop - tabSize/2, width: tabSize, height: tabSize };
+        case "innerBottom":
+          return { x: cardImage.width/2 - tabSize/2 + 10, y: innerBottom - tabSize/2, width: tabSize, height: tabSize };
+        case "outerLeft":
+          return { x: outerLeft - tabSize/2, y: cardImage.height/2 - tabSize/2 - 10, width: tabSize, height: tabSize };
+        case "outerRight":
+          return { x: outerRight - tabSize/2, y: cardImage.height/2 - tabSize/2 - 10, width: tabSize, height: tabSize };
+        case "innerLeft":
+          return { x: innerLeft - tabSize/2, y: cardImage.height/2 - tabSize/2 + 10, width: tabSize, height: tabSize };
+        case "innerRight":
+          return { x: innerRight - tabSize/2, y: cardImage.height/2 - tabSize/2 + 10, width: tabSize, height: tabSize };
+        default:
+          return null;
       }
-      return false;
     }
 
-    // -------------------------------
-    // Draw the scene:
-    // 1. Draw the rotated card image (only the image is rotated).
-    // 2. Draw the fixed overlays (non-rotated) representing the card box and moveable measurement borders.
+    // Draw the canvas.
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!cardImage.complete || cardImage.naturalWidth === 0) return;
-
       const { cardX, cardY, cardWidthScaled, cardHeightScaled } = getCardBox();
 
-      // ---- Draw the rotated card image ----
-      // The image is drawn centered in the card box.
+      // Draw rotated card image.
       ctx.save();
-      const centerX = cardX + cardWidthScaled / 2;
-      const centerY = cardY + cardHeightScaled / 2;
+      const centerX = cardX + cardWidthScaled/2;
+      const centerY = cardY + cardHeightScaled/2;
       ctx.translate(centerX, centerY);
       ctx.rotate(rad);
       ctx.drawImage(cardImage,
@@ -161,84 +204,68 @@
         cardImage.height * scale);
       ctx.restore();
 
-      // ---- Draw fixed overlays (non-rotated) ----
-      // These overlays represent the card box and measurement borders.
-      // Draw a thin black border around the card box.
+      // Draw fixed overlays (non-rotated).
       ctx.lineWidth = 2;
       ctx.strokeStyle = "black";
       ctx.strokeRect(cardX, cardY, cardWidthScaled, cardHeightScaled);
 
-      // Draw Outer Measurement Borders (high-contrast blue) with thinner stroke.
+      // Outer Measurement Borders (blue).
       ctx.lineWidth = 1;
       ctx.strokeStyle = "blue";
-      // Horizontal (top and bottom)
       ctx.beginPath();
       ctx.moveTo(cardX, cardY + outerTop * scale);
       ctx.lineTo(cardX + cardWidthScaled, cardY + outerTop * scale);
       ctx.stroke();
-
       ctx.beginPath();
       ctx.moveTo(cardX, cardY + outerBottom * scale);
       ctx.lineTo(cardX + cardWidthScaled, cardY + outerBottom * scale);
       ctx.stroke();
-
-      // Vertical (left and right)
       ctx.beginPath();
       ctx.moveTo(cardX + outerLeft * scale, cardY);
       ctx.lineTo(cardX + outerLeft * scale, cardY + cardHeightScaled);
       ctx.stroke();
-
       ctx.beginPath();
       ctx.moveTo(cardX + outerRight * scale, cardY);
       ctx.lineTo(cardX + outerRight * scale, cardY + cardHeightScaled);
       ctx.stroke();
 
-      // Draw Inner Measurement Borders (solid neon yellow) with thinner stroke.
+      // Inner Measurement Borders (neon yellow).
       ctx.strokeStyle = "#FFFF00";
-      // Horizontal (top and bottom)
       ctx.beginPath();
       ctx.moveTo(cardX, cardY + innerTop * scale);
       ctx.lineTo(cardX + cardWidthScaled, cardY + innerTop * scale);
       ctx.stroke();
-
       ctx.beginPath();
       ctx.moveTo(cardX, cardY + innerBottom * scale);
       ctx.lineTo(cardX + cardWidthScaled, cardY + innerBottom * scale);
       ctx.stroke();
-
-      // Vertical (left and right)
       ctx.beginPath();
       ctx.moveTo(cardX + innerLeft * scale, cardY);
       ctx.lineTo(cardX + innerLeft * scale, cardY + cardHeightScaled);
       ctx.stroke();
-
       ctx.beginPath();
       ctx.moveTo(cardX + innerRight * scale, cardY);
       ctx.lineTo(cardX + innerRight * scale, cardY + cardHeightScaled);
       ctx.stroke();
 
-      // ---- Draw Tab Attachments (small white squares) for easier grabbing ----
+      // Draw tab attachments.
       ctx.fillStyle = "white";
-      // Horizontal lines: For outer borders, shift tab 10px to the left; for inner, 10px to the right.
+      // Horizontal tabs.
       ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 - 10, cardY + outerTop * scale - tabSize/2, tabSize, tabSize);
       ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 - 10, cardY + outerBottom * scale - tabSize/2, tabSize, tabSize);
       ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 + 10, cardY + innerTop * scale - tabSize/2, tabSize, tabSize);
       ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 + 10, cardY + innerBottom * scale - tabSize/2, tabSize, tabSize);
-
-      // Vertical lines: For outer borders, shift tab 10px upward; for inner, shift 10px downward.
+      // Vertical tabs.
       ctx.fillRect(cardX + outerLeft * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 - 10, tabSize, tabSize);
       ctx.fillRect(cardX + outerRight * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 - 10, tabSize, tabSize);
       ctx.fillRect(cardX + innerLeft * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 + 10, tabSize, tabSize);
       ctx.fillRect(cardX + innerRight * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 + 10, tabSize, tabSize);
 
-      // ---- Calculate Centering Percentages ----
-      // Vertical: gap above inner = innerTop - outerTop, gap below inner = outerBottom - innerBottom.
+      // Centering Calculations.
       const verticalTopGap = innerTop - outerTop;
       const verticalBottomGap = outerBottom - innerBottom;
       const verticalTotal = verticalTopGap + verticalBottomGap;
       const verticalPercent = verticalTotal ? (verticalTopGap / verticalTotal) * 100 : 0;
-
-      // Horizontal: gap left = innerLeft - outerLeft, gap right = outerRight - innerRight.
       const horizontalLeftGap = innerLeft - outerLeft;
       const horizontalRightGap = outerRight - innerRight;
       const horizontalTotal = horizontalLeftGap + horizontalRightGap;
@@ -248,77 +275,114 @@
       horizontalInfo.textContent = "Horizontal: " + horizontalPercent.toFixed(1) + "% left / " + (100 - horizontalPercent).toFixed(1) + "% right";
     }
 
-    // -------------------------------
-    // Mouse Event Handlers for dragging the borders.
-    canvas.addEventListener('mousedown', (evt) => {
-      if (!cardImage.complete || cardImage.naturalWidth === 0) return;
-      const pos = getMousePosInCardCoords(evt);
-      // Check the eight borders for a hit.
-      if (Math.abs(pos.y - outerTop) < tolerance || isWithinTab(pos, outerTop, "horizontal")) {
-        dragItem = "outerTop"; dragging = true;
-      } else if (Math.abs(pos.y - outerBottom) < tolerance || isWithinTab(pos, outerBottom, "horizontal")) {
-        dragItem = "outerBottom"; dragging = true;
-      } else if (Math.abs(pos.x - outerLeft) < tolerance || isWithinTab(pos, outerLeft, "vertical")) {
-        dragItem = "outerLeft"; dragging = true;
-      } else if (Math.abs(pos.x - outerRight) < tolerance || isWithinTab(pos, outerRight, "vertical")) {
-        dragItem = "outerRight"; dragging = true;
-      } else if (Math.abs(pos.y - innerTop) < tolerance || isWithinTab(pos, innerTop, "horizontal")) {
-        dragItem = "innerTop"; dragging = true;
-      } else if (Math.abs(pos.y - innerBottom) < tolerance || isWithinTab(pos, innerBottom, "horizontal")) {
-        dragItem = "innerBottom"; dragging = true;
-      } else if (Math.abs(pos.x - innerLeft) < tolerance || isWithinTab(pos, innerLeft, "vertical")) {
-        dragItem = "innerLeft"; dragging = true;
-      } else if (Math.abs(pos.x - innerRight) < tolerance || isWithinTab(pos, innerRight, "vertical")) {
-        dragItem = "innerRight"; dragging = true;
+    // Function to load an image file.
+    function loadFile(file) {
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          cardImage.src = e.target.result;
+        }
+        reader.readAsDataURL(file);
       }
+    }
+
+    // --- Mouse event handlers ---
+    canvas.addEventListener('mousedown', (evt) => {
+      if (!cardImage.complete) return;
+      const pos = getMousePosInCardCoords(evt);
+      if (Math.abs(pos.y - outerTop) < tolerance || isInRect(pos, getTabRect("outerTop"))) { dragItem = "outerTop"; dragging = true; }
+      else if (Math.abs(pos.y - outerBottom) < tolerance || isInRect(pos, getTabRect("outerBottom"))) { dragItem = "outerBottom"; dragging = true; }
+      else if (Math.abs(pos.x - outerLeft) < tolerance || isInRect(pos, getTabRect("outerLeft"))) { dragItem = "outerLeft"; dragging = true; }
+      else if (Math.abs(pos.x - outerRight) < tolerance || isInRect(pos, getTabRect("outerRight"))) { dragItem = "outerRight"; dragging = true; }
+      else if (Math.abs(pos.y - innerTop) < tolerance || isInRect(pos, getTabRect("innerTop"))) { dragItem = "innerTop"; dragging = true; }
+      else if (Math.abs(pos.y - innerBottom) < tolerance || isInRect(pos, getTabRect("innerBottom"))) { dragItem = "innerBottom"; dragging = true; }
+      else if (Math.abs(pos.x - innerLeft) < tolerance || isInRect(pos, getTabRect("innerLeft"))) { dragItem = "innerLeft"; dragging = true; }
+      else if (Math.abs(pos.x - innerRight) < tolerance || isInRect(pos, getTabRect("innerRight"))) { dragItem = "innerRight"; dragging = true; }
     });
 
     canvas.addEventListener('mousemove', (evt) => {
       if (!dragging) return;
       const pos = getMousePosInCardCoords(evt);
-      // Enforce ordering:
-      // Vertical: outerTop ≤ innerTop ≤ innerBottom ≤ outerBottom.
-      // Horizontal: outerLeft ≤ innerLeft ≤ innerRight ≤ outerRight.
       switch(dragItem) {
-        case "outerTop":
-          outerTop = Math.min(pos.y, innerTop);
-          break;
-        case "innerTop":
-          innerTop = Math.min(Math.max(pos.y, outerTop), innerBottom);
-          break;
-        case "innerBottom":
-          innerBottom = Math.max(Math.min(pos.y, outerBottom), innerTop);
-          break;
-        case "outerBottom":
-          outerBottom = Math.max(pos.y, innerBottom);
-          break;
-        case "outerLeft":
-          outerLeft = Math.min(pos.x, innerLeft);
-          break;
-        case "innerLeft":
-          innerLeft = Math.min(Math.max(pos.x, outerLeft), innerRight);
-          break;
-        case "innerRight":
-          innerRight = Math.max(Math.min(pos.x, outerRight), innerLeft);
-          break;
-        case "outerRight":
-          outerRight = Math.max(pos.x, innerRight);
-          break;
+        case "outerTop": outerTop = Math.min(pos.y, innerTop); break;
+        case "innerTop": innerTop = Math.min(Math.max(pos.y, outerTop), innerBottom); break;
+        case "innerBottom": innerBottom = Math.max(Math.min(pos.y, outerBottom), innerTop); break;
+        case "outerBottom": outerBottom = Math.max(pos.y, innerBottom); break;
+        case "outerLeft": outerLeft = Math.min(pos.x, innerLeft); break;
+        case "innerLeft": innerLeft = Math.min(Math.max(pos.x, outerLeft), innerRight); break;
+        case "innerRight": innerRight = Math.max(Math.min(pos.x, outerRight), innerLeft); break;
+        case "outerRight": outerRight = Math.max(pos.x, innerRight); break;
       }
       drawCanvas();
     });
 
-    canvas.addEventListener('mouseup', () => {
-      dragging = false;
-      dragItem = null;
+    canvas.addEventListener('mouseup', () => { dragging = false; dragItem = null; });
+    canvas.addEventListener('mouseleave', () => { dragging = false; dragItem = null; });
+
+    // --- Touch event handlers ---
+    canvas.addEventListener('touchstart', (evt) => {
+      evt.preventDefault();
+      if (!cardImage.complete) return;
+      const pos = getTouchPosInCardCoords(evt);
+      if (Math.abs(pos.y - outerTop) < tolerance || isInRect(pos, getTabRect("outerTop"))) { dragItem = "outerTop"; dragging = true; }
+      else if (Math.abs(pos.y - outerBottom) < tolerance || isInRect(pos, getTabRect("outerBottom"))) { dragItem = "outerBottom"; dragging = true; }
+      else if (Math.abs(pos.x - outerLeft) < tolerance || isInRect(pos, getTabRect("outerLeft"))) { dragItem = "outerLeft"; dragging = true; }
+      else if (Math.abs(pos.x - outerRight) < tolerance || isInRect(pos, getTabRect("outerRight"))) { dragItem = "outerRight"; dragging = true; }
+      else if (Math.abs(pos.y - innerTop) < tolerance || isInRect(pos, getTabRect("innerTop"))) { dragItem = "innerTop"; dragging = true; }
+      else if (Math.abs(pos.y - innerBottom) < tolerance || isInRect(pos, getTabRect("innerBottom"))) { dragItem = "innerBottom"; dragging = true; }
+      else if (Math.abs(pos.x - innerLeft) < tolerance || isInRect(pos, getTabRect("innerLeft"))) { dragItem = "innerLeft"; dragging = true; }
+      else if (Math.abs(pos.x - innerRight) < tolerance || isInRect(pos, getTabRect("innerRight"))) { dragItem = "innerRight"; dragging = true; }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (evt) => {
+      evt.preventDefault();
+      if (!dragging) return;
+      const pos = getTouchPosInCardCoords(evt);
+      switch(dragItem) {
+        case "outerTop": outerTop = Math.min(pos.y, innerTop); break;
+        case "innerTop": innerTop = Math.min(Math.max(pos.y, outerTop), innerBottom); break;
+        case "innerBottom": innerBottom = Math.max(Math.min(pos.y, outerBottom), innerTop); break;
+        case "outerBottom": outerBottom = Math.max(pos.y, innerBottom); break;
+        case "outerLeft": outerLeft = Math.min(pos.x, innerLeft); break;
+        case "innerLeft": innerLeft = Math.min(Math.max(pos.x, outerLeft), innerRight); break;
+        case "innerRight": innerRight = Math.max(Math.min(pos.x, outerRight), innerLeft); break;
+        case "outerRight": outerRight = Math.max(pos.x, innerRight); break;
+      }
+      drawCanvas();
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (evt) => { evt.preventDefault(); dragging = false; dragItem = null; }, { passive: false });
+    canvas.addEventListener('touchcancel', (evt) => { evt.preventDefault(); dragging = false; dragItem = null; }, { passive: false });
+
+    // --- Drag-and-drop: Allow files to be dropped onto the canvas wrapper.
+    canvasWrapper.addEventListener('dragover', (evt) => {
+      evt.preventDefault();
+      canvasWrapper.classList.add('dragover');
     });
-    canvas.addEventListener('mouseleave', () => {
-      dragging = false;
-      dragItem = null;
+    canvasWrapper.addEventListener('dragleave', (evt) => {
+      evt.preventDefault();
+      canvasWrapper.classList.remove('dragover');
+    });
+    canvasWrapper.addEventListener('drop', (evt) => {
+      evt.preventDefault();
+      canvasWrapper.classList.remove('dragover');
+      const files = evt.dataTransfer.files;
+      if (files.length > 0) { loadFile(files[0]); }
     });
 
-    // -------------------------------
-    // Rotation slider update.
+    // --- Paste event: Allow pasted images.
+    document.addEventListener('paste', (evt) => {
+      const items = evt.clipboardData.items;
+      for (let item of items) {
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          loadFile(file);
+          break;
+        }
+      }
+    });
+
+    // --- Rotation slider update.
     rotateSlider.addEventListener('input', () => {
       rotationAngle = parseFloat(rotateSlider.value);
       angleValue.textContent = rotationAngle + "°";
@@ -326,36 +390,27 @@
       drawCanvas();
     });
 
-    // -------------------------------
-    // Image Upload Handler.
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        cardImage.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
+    // --- File input change.
+    fileInput.addEventListener('change', (evt) => {
+      const file = evt.target.files[0];
+      loadFile(file);
     });
 
-    // When the image loads, initialize scale and border positions.
+    // Initialize when image loads.
     cardImage.onload = () => {
       scale = Math.min(canvas.width / cardImage.width, canvas.height / cardImage.height);
-      // Set measurement borders in natural card coordinates.
       outerTop = cardImage.height * 0.05;
       outerBottom = cardImage.height * 0.95;
       outerLeft = cardImage.width * 0.05;
       outerRight = cardImage.width * 0.95;
-      
       innerTop = cardImage.height * 0.15;
       innerBottom = cardImage.height * 0.85;
       innerLeft = cardImage.width * 0.15;
       innerRight = cardImage.width * 0.85;
-      
       drawCanvas();
     };
 
-    // Initial draw (in case image is cached)
+    // Initial draw.
     drawCanvas();
   </script>
 </body>
