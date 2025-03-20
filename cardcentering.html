@@ -96,7 +96,7 @@
   </div>
   <div class="controls">
     <label for="rotateSlider">Rotation:</label>
-    <input type="range" id="rotateSlider" min="-15" max="15" step="0.5" value="0">
+    <input type="range" id="rotateSlider" min="-5" max="5" step="0.1" value="0">
     <span id="angleValue">0°</span>
   </div>
   
@@ -141,7 +141,7 @@
     // Drag state
     let dragging = false;
     let dragItem = null; // e.g., "outerTop", "innerLeft", etc.
-    const tolerance = 25;  // hit tolerance (in natural card coordinates)
+    const tolerance = 20;  // hit tolerance (in natural card coordinates)
     const tabSize = 15;    // size of draggable tab
 
     function getCardBox() {
