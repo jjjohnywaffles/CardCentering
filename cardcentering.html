@@ -2,119 +2,826 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Card Centering Tool</title>
   <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+    }
+    
     body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #f0f2f5;
+      font-family: 'Inter', sans-serif;
+      background-color: #f7f9fc;
       color: #333;
       margin: 0;
       padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-height: 100vh;
     }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+    
     h1 {
-      margin-bottom: 20px;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1a365d;
     }
-    .controls {
-      margin: 15px;
-      text-align: center;
-    }
-    /* Fixed width for the rotation slider and value display */
-    input[type="range"] {
-      width: 300px;
-    }
-    #angleValue {
-      display: inline-block;
-      width: 50px; /* fixed width so text doesn't change layout */
-      text-align: right;
-    }
-    /* Container for canvas and info panel */
-    #canvasWrapper {
-      width: 800px;
-      max-width: 100%;
+    
+    .subheader {
+      font-size: 16px;
+      color: #4a5568;
+      max-width: 600px;
       margin: 0 auto;
+    }
+    
+    .main-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 24px;
+      width: 100%;
+      max-width: 1200px;
+    }
+    
+    .card-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      overflow: hidden;
+      flex: 1;
+      min-width: 300px;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .panel-header {
+      background: #1a365d;
+      color: white;
+      padding: 16px;
+      font-weight: 500;
+      font-size: 18px;
+    }
+    
+    .panel-content {
+      padding: 20px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .control-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #4a5568;
+    }
+    
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .file-input-button {
+      background: #1a365d;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+    }
+    
+    .file-input-button:hover {
+      background: #2c5282;
+    }
+    
+    #fileInput {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    input[type="range"] {
+      width: 250px;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #e2e8f0;
+      border-radius: 5px;
+      outline: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #1a365d;
+      cursor: pointer;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #1a365d;
+      cursor: pointer;
+      border: none;
+    }
+    
+    #angleValue {
+      min-width: 50px;
       text-align: center;
+      font-weight: 500;
+    }
+    
+    #canvasWrapper {
+      width: 100%;
       position: relative;
       transition: border 0.3s;
+      margin-bottom: 16px;
     }
-    /* Visual cue for dragover */
+    
     #canvasWrapper.dragover {
-      border: 2px dashed #888;
+      border: 2px dashed #4299e1;
+      border-radius: 12px;
     }
+    
     #canvasContainer {
       background: #fff;
-      padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       position: relative;
+      overflow: hidden;
     }
+    
     canvas {
       width: 100%;
       height: auto;
-      background: #fff;
+      background: #f8fafc;
       cursor: crosshair;
+      display: block;
     }
-    /* Instruction overlay */
+    
     #instructions {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255,255,255,0.8);
-      padding: 20px;
+      background: rgba(255,255,255,0.9);
+      padding: 24px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       text-align: center;
-      font-size: 1rem;
+      font-size: 16px;
       width: 80%;
+      max-width: 400px;
+      z-index: 10;
     }
-    /* Info panel below the canvas */
+    
+    .instruction-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #1a365d;
+    }
+    
+    .instruction-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+      color: #4299e1;
+    }
+    
+    .instruction-step {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .step-number {
+      background: #1a365d;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    
     #infoPanel {
-      margin-top: 20px;
-      background: #fff;
-      padding: 15px;
+      background: #f8fafc;
+      padding: 16px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 1px solid #e2e8f0;
+    }
+    
+    .info-title {
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: #1a365d;
       text-align: center;
+    }
+    
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    
+    .info-label {
+      font-weight: 500;
+      color: #4a5568;
+    }
+    
+    .info-value {
+      font-weight: 500;
+    }
+    
+    .grade-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .grade-label {
+      font-weight: 500;
+      color: #4a5568;
+    }
+    
+    .grade-value {
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: white;
+      min-width: 100px;
+      text-align: center;
+    }
+    
+    .grade-excellent {
+      background-color: #38a169;
+    }
+    
+    .grade-good {
+      background-color: #4299e1;
+    }
+    
+    .grade-fair {
+      background-color: #ed8936;
+    }
+    
+    .grade-poor {
+      background-color: #e53e3e;
+    }
+    
+    .reset-button {
+      background: #e53e3e;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    
+    .reset-button:hover {
+      background: #c53030;
+    }
+    
+    .grading-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      overflow: hidden;
+      flex: 0.4;
       min-width: 300px;
+    }
+    
+    .grading-content {
+      padding: 20px;
+      flex-grow: 1;
+    }
+    
+    .company-tabs {
+      display: flex;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .company-tab {
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 500;
+      color: #4a5568;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .company-tab.active {
+      color: #1a365d;
+      border-bottom: 2px solid #1a365d;
+    }
+    
+    .company-tab:hover:not(.active) {
+      background: #f8fafc;
+    }
+    
+    .company-content {
+      display: none;
+      padding: 16px 0;
+    }
+    
+    .company-content.active {
+      display: block;
+    }
+    
+    .grading-info {
+      margin-bottom: 16px;
+    }
+    
+    .grading-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+    
+    .grading-table th,
+    .grading-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .grading-table th {
+      background: #f8fafc;
+      font-weight: 500;
+      color: #4a5568;
+    }
+    
+    .grading-logo {
+      max-width: 180px;
+      height: auto;
+      margin-bottom: 16px;
+      display: block;
+    }
+    
+    .company-description {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #4a5568;
+      line-height: 1.5;
+    }
+    
+    .aspect-ratio-switch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 16px;
+    }
+    
+    .aspect-ratio-label {
+      font-size: 14px;
+      color: #4a5568;
+    }
+    
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e0;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: #1a365d;
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+    
+    .tab-content-wrapper {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .file-input-wrapper {
+        width: 100%;
+      }
+      
+      .file-input-button {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      input[type="range"] {
+        width: 100%;
+      }
+    }
+    
+    /* Legend for borders */
+    .border-legend {
+      display: flex;
+      gap: 20px;
+      margin: 16px 0;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    
+    .legend-color {
+      width: 24px;
+      height: 8px;
+    }
+    
+    .outer-border {
+      background-color: #3182ce;
+    }
+    
+    .inner-border {
+      background-color: #ecc94b;
     }
   </style>
 </head>
 <body>
-  <h1>Card Centering Tool</h1>
-  
-  <!-- Image Upload and Rotation Controls -->
-  <div class="controls">
-    <input type="file" id="fileInput" accept="image/*">
-  </div>
-  <div class="controls">
-    <label for="rotateSlider">Rotation:</label>
-    <input type="range" id="rotateSlider" min="-5" max="5" step="0.1" value="0">
-    <span id="angleValue">0°</span>
+  <div class="header">
+    <h1>Card Centering Tool</h1>
+    <p class="subheader">Measure the centering of your trading cards to assess potential centering grades</p>
   </div>
   
-  <div id="canvasWrapper">
-    <div id="canvasContainer">
-      <canvas id="cardCanvas" width="800" height="600"></canvas>
-      <!-- Instruction overlay (visible until an image is loaded) -->
-      <div id="instructions">
-        <p>
-          Upload an image by using the browse button, drag and drop your image into this area, or paste an image from your clipboard.
-        </p>
+  <div class="main-container">
+    <div class="card-panel">
+      <div class="panel-header">Card Analysis</div>
+      <div class="panel-content">
+        <!-- Controls -->
+        <div class="controls">
+          <div class="file-input-wrapper">
+            <button class="file-input-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Upload Card Image
+            </button>
+            <input type="file" id="fileInput" accept="image/*">
+          </div>
+          
+          <div class="control-group">
+            <label class="control-label" for="rotateSlider">Rotation</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="range" id="rotateSlider" min="-5" max="5" step="0.1" value="0">
+              <span id="angleValue">0°</span>
+            </div>
+          </div>
+          
+          <div class="aspect-ratio-switch">
+            <span class="aspect-ratio-label">Lock Aspect Ratio</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="aspectRatioToggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <button id="resetButton" class="reset-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+              <path d="M3 2v6h6"></path>
+              <path d="M3 8C5.33 5.67 8.67 5.67 11 8s5.67 2.33 8 0"></path>
+            </svg>
+            Reset
+          </button>
+        </div>
+        
+        <!-- Border legend -->
+        <div class="border-legend">
+          <div class="legend-item">
+            <div class="legend-color outer-border"></div>
+            <span>Outer Border (Card Edge)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color inner-border"></div>
+            <span>Inner Border (Design Edge)</span>
+          </div>
+        </div>
+        
+        <!-- Canvas wrapper -->
+        <div id="canvasWrapper">
+          <div id="canvasContainer">
+            <canvas id="cardCanvas" width="800" height="600"></canvas>
+            <!-- Instruction overlay -->
+            <div id="instructions">
+              <div class="instruction-icon">📷</div>
+              <div class="instruction-title">Get Started</div>
+              <div class="instruction-step">
+                <div class="step-number">1</div>
+                <span>Upload your card image using the button above</span>
+              </div>
+              <div class="instruction-step">
+                <div class="step-number">2</div>
+                <span>Or drag and drop an image here</span>
+              </div>
+              <div class="instruction-step">
+                <div class="step-number">3</div>
+                <span>You can also paste an image from clipboard</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Centering info panel -->
+        <div id="infoPanel">
+          <div class="info-title">Centering Measurements</div>
+          <div class="info-row">
+            <span class="info-label">Vertical:</span>
+            <span id="verticalInfo" class="info-value">N/A</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Horizontal:</span>
+            <span id="horizontalInfo" class="info-value">N/A</span>
+          </div>
+          
+          <div class="grade-indicator">
+            <span class="grade-label">PSA Centering Grade:</span>
+            <span id="psaGrade" class="grade-value">N/A</span>
+          </div>
+          <div class="grade-indicator">
+            <span class="grade-label">BGS Centering Grade:</span>
+            <span id="bgsGrade" class="grade-value">N/A</span>
+          </div>
+        </div>
       </div>
     </div>
-    <!-- Centering Info displayed below the canvas -->
-    <div id="infoPanel">
-      <h3>Centering Info</h3>
-      <div id="verticalInfo">Vertical: N/A</div>
-      <div id="horizontalInfo">Horizontal: N/A</div>
+    
+    <!-- Grading reference panel -->
+    <div class="grading-panel">
+      <div class="panel-header">Grading Reference</div>
+      <div class="company-tabs">
+        <button class="company-tab active" data-tab="psa">PSA</button>
+        <button class="company-tab" data-tab="bgs">BGS</button>
+        <button class="company-tab" data-tab="cgc">CGC</button>
+        <button class="company-tab" data-tab="tag">TAG</button>
+      </div>
+      <div class="grading-content">
+        <div class="tab-content-wrapper">
+          <!-- PSA Content -->
+          <div id="psa-content" class="company-content active">
+            <img src="/api/placeholder/180/60" alt="PSA Logo" class="grading-logo">
+            <p class="company-description">PSA (Professional Sports Authenticator) is one of the largest and most trusted third-party authentication and grading services in the trading card industry.</p>
+            
+            <div class="grading-info">
+              <table class="grading-table">
+                <thead>
+                  <tr>
+                    <th>PSA Grade</th>
+                    <th>Centering Requirements</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>PSA 10 (Gem Mint)</td>
+                    <td>55/45 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>PSA 9 (Mint)</td>
+                    <td>60/40 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>PSA 8 (Near Mint-Mint)</td>
+                    <td>65/35 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>PSA 7 (Near Mint)</td>
+                    <td>70/30 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>PSA 6 (Excellent-Near Mint)</td>
+                    <td>75/25 or better all around</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <p class="company-description"><strong>Note:</strong> PSA expresses centering as a ratio of the larger border measurement to the smaller (e.g., 55/45 means the larger border is 55% and smaller is 45% of the total border width/height).</p>
+          </div>
+          
+          <!-- BGS Content -->
+          <div id="bgs-content" class="company-content">
+            <img src="/api/placeholder/180/60" alt="BGS Logo" class="grading-logo">
+            <p class="company-description">Beckett Grading Services (BGS) is known for its detailed, sub-category grading system that includes separate scores for centering, corners, edges, and surface.</p>
+            
+            <div class="grading-info">
+              <table class="grading-table">
+                <thead>
+                  <tr>
+                    <th>BGS Centering Grade</th>
+                    <th>Centering Requirements</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>10 (Pristine)</td>
+                    <td>50/50 both axes</td>
+                  </tr>
+                  <tr>
+                    <td>9.5 (Gem Mint)</td>
+                    <td>50/50 - 55/45 </td>
+                  </tr>
+                  <tr>
+                    <td>9.0 (Mint)</td>
+                    <td>60/40 to 65/35</td>
+                  </tr>
+                  <tr>
+                    <td>8.5 (Near Mint-Mint+)</td>
+                    <td>65/35 to 70/30</td>
+                  </tr>
+                  <tr>
+                    <td>8.0 (Near Mint-Mint)</td>
+                    <td>70/30 to 75/25</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <p class="company-description"><strong>Note:</strong> BGS is known for being particularly strict on centering. Their Black Label (Perfect 10) requires near-perfect 50/50 centering on both axes.</p>
+          </div>
+          
+          <!-- CGC Content -->
+          <div id="cgc-content" class="company-content">
+            <img src="/api/placeholder/180/60" alt="CGC Logo" class="grading-logo">
+            <p class="company-description">Certified Guaranty Company (CGC) is a relatively newer trading card grading service known for their experience in comic book grading. Their centering standards are similar to BGS.</p>
+            
+            <div class="grading-info">
+              <table class="grading-table">
+                <thead>
+                  <tr>
+                    <th>CGC Centering Grade</th>
+                    <th>Centering Requirements</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>10 (Pristine)</td>
+                    <td>55/45 or better both axes</td>
+                  </tr>
+                  <tr>
+                    <td>9.5 (Gem Mint)</td>
+                    <td>60/40 or better both axes</td>
+                  </tr>
+                  <tr>
+                    <td>9.0 (Mint)</td>
+                    <td>65/35 or better both axes</td>
+                  </tr>
+                  <tr>
+                    <td>8.5 (Near Mint+)</td>
+                    <td>70/30 or better both axes</td>
+                  </tr>
+                  <tr>
+                    <td>8.0 (Near Mint)</td>
+                    <td>75/25 or better both axes</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <p class="company-description"><strong>Note:</strong> CGC's Perfect 10 (their highest grade) requires near-perfect centering similar to BGS Black Label.</p>
+          </div>
+          
+          <!-- TAG Content -->
+          <div id="tag-content" class="company-content">
+            <img src="/api/placeholder/180/60" alt="TAG Logo" class="grading-logo">
+            <p class="company-description">TAG (Trading Card Authentication & Grading) is an up-and-coming card grading company that focuses on transparency in their grading process.</p>
+            
+            <div class="grading-info">
+              <table class="grading-table">
+                <thead>
+                  <tr>
+                    <th>TAG Centering Grade</th>
+                    <th>Centering Requirements</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>10 (Pristine)</td>
+                    <td>51/49 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>10 (Gem+)</td>
+                    <td>55/45 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>9.5 (Gem)</td>
+                    <td>60/40 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>9.0 (Mint+)</td>
+                    <td>65/35 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>8.5 (Mint)</td>
+                    <td>70/30 or better all around</td>
+                  </tr>
+                  <tr>
+                    <td>8.0 (Near Mint+)</td>
+                    <td>75/25 or better all around</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <p class="company-description"><strong>Note:</strong> TAG uses a similar sub-grading system to BGS, with centering being one of their primary evaluation metrics.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -128,11 +835,20 @@
     const horizontalInfo = document.getElementById('horizontalInfo');
     const canvasWrapper = document.getElementById('canvasWrapper');
     const instructions = document.getElementById('instructions');
+    const resetButton = document.getElementById('resetButton');
+    const aspectRatioToggle = document.getElementById('aspectRatioToggle');
+    const psaGrade = document.getElementById('psaGrade');
+    const bgsGrade = document.getElementById('bgsGrade');
+
+    // Company tabs
+    const companyTabs = document.querySelectorAll('.company-tab');
+    const companyContents = document.querySelectorAll('.company-content');
 
     let cardImage = new Image();
     let rotationAngle = 0; // degrees
     let rad = 0;           // radians
     let scale = 1;         // computed scale factor
+    let aspectRatioLocked = true;
 
     // Measurement borders in natural (non-rotated) card coordinates.
     let outerTop, outerBottom, outerLeft, outerRight;
@@ -210,6 +926,59 @@
       }
     }
 
+    function calculateGrade(verticalPercent, horizontalPercent) {
+      // For PSA
+      const psaWorstCentering = Math.max(
+        Math.abs(verticalPercent - 50),
+        Math.abs(horizontalPercent - 50)
+      );
+      
+      // For BGS - slightly stricter
+      const bgsWorstCentering = Math.max(
+        Math.abs(verticalPercent - 50),
+        Math.abs(horizontalPercent - 50)
+      );
+      
+      // Set PSA grade class and text
+      if (psaWorstCentering <= 5) {
+        psaGrade.textContent = "Gem Mint (PSA 10)";
+        psaGrade.className = "grade-value grade-excellent";
+      } else if (psaWorstCentering <= 10) {
+        psaGrade.textContent = "Mint (PSA 9)";
+        psaGrade.className = "grade-value grade-good";
+      } else if (psaWorstCentering <= 15) {
+        psaGrade.textContent = "NM-MT (PSA 8)";
+        psaGrade.className = "grade-value grade-good";
+      } else if (psaWorstCentering <= 20) {
+        psaGrade.textContent = "Near Mint (PSA 7)";
+        psaGrade.className = "grade-value grade-fair";
+      } else {
+        psaGrade.textContent = "EX-NM or Lower";
+        psaGrade.className = "grade-value grade-poor";
+      }
+      
+      // Set BGS grade class and text
+      if (bgsWorstCentering <= 2.5) {
+        bgsGrade.textContent = "Pristine (10)";
+        bgsGrade.className = "grade-value grade-excellent";
+      } else if (bgsWorstCentering <= 5) {
+        bgsGrade.textContent = "Gem Mint (9.5)";
+        bgsGrade.className = "grade-value grade-excellent";
+      } else if (bgsWorstCentering <= 10) {
+        bgsGrade.textContent = "Mint (9.0)";
+        bgsGrade.className = "grade-value grade-good";
+      } else if (bgsWorstCentering <= 15) {
+        bgsGrade.textContent = "NM-MT+ (8.5)";
+        bgsGrade.className = "grade-value grade-good";
+      } else if (bgsWorstCentering <= 20) {
+        bgsGrade.textContent = "NM-MT (8.0)";
+        bgsGrade.className = "grade-value grade-fair";
+      } else {
+        bgsGrade.textContent = "NM or Lower";
+        bgsGrade.className = "grade-value grade-poor";
+      }
+    }
+
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!cardImage.complete || cardImage.naturalWidth === 0) return;
@@ -227,12 +996,14 @@
         cardImage.height * scale);
       ctx.restore();
 
+      // Draw the card border
       ctx.lineWidth = 2;
-      ctx.strokeStyle = "black";
+      ctx.strokeStyle = "#2c5282";
       ctx.strokeRect(cardX, cardY, cardWidthScaled, cardHeightScaled);
 
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = "blue";
+      // Outer borders
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#3182ce";
       ctx.beginPath();
       ctx.moveTo(cardX, cardY + outerTop * scale);
       ctx.lineTo(cardX + cardWidthScaled, cardY + outerTop * scale);
@@ -250,7 +1021,8 @@
       ctx.lineTo(cardX + outerRight * scale, cardY + cardHeightScaled);
       ctx.stroke();
 
-      ctx.strokeStyle = "#FFFF00";
+      // Inner borders
+      ctx.strokeStyle = "#ecc94b";
       ctx.beginPath();
       ctx.moveTo(cardX, cardY + innerTop * scale);
       ctx.lineTo(cardX + cardWidthScaled, cardY + innerTop * scale);
@@ -268,26 +1040,76 @@
       ctx.lineTo(cardX + innerRight * scale, cardY + cardHeightScaled);
       ctx.stroke();
 
+      // Draw the draggable tabs
       ctx.fillStyle = "white";
-      ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 - 10, cardY + outerTop * scale - tabSize/2, tabSize, tabSize);
-      ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 - 10, cardY + outerBottom * scale - tabSize/2, tabSize, tabSize);
-      ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 + 10, cardY + innerTop * scale - tabSize/2, tabSize, tabSize);
-      ctx.fillRect(cardX + cardWidthScaled/2 - tabSize/2 + 10, cardY + innerBottom * scale - tabSize/2, tabSize, tabSize);
-      ctx.fillRect(cardX + outerLeft * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 - 10, tabSize, tabSize);
-      ctx.fillRect(cardX + outerRight * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 - 10, tabSize, tabSize);
-      ctx.fillRect(cardX + innerLeft * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 + 10, tabSize, tabSize);
-      ctx.fillRect(cardX + innerRight * scale - tabSize/2, cardY + cardHeightScaled/2 - tabSize/2 + 10, tabSize, tabSize);
+      ctx.strokeStyle = "#2c5282";
+      ctx.lineWidth = 1;
+      
+      // Top outer tab
+      ctx.beginPath();
+      ctx.rect(cardX + (cardImage.width/2 - tabSize/2 - 10) * scale, cardY + (outerTop - tabSize/2) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Bottom outer tab
+      ctx.beginPath();
+      ctx.rect(cardX + (cardImage.width/2 - tabSize/2 - 10) * scale, cardY + (outerBottom - tabSize/2) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Top inner tab
+      ctx.beginPath();
+      ctx.rect(cardX + (cardImage.width/2 - tabSize/2 + 10) * scale, cardY + (innerTop - tabSize/2) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Bottom inner tab
+      ctx.beginPath();
+      ctx.rect(cardX + (cardImage.width/2 - tabSize/2 + 10) * scale, cardY + (innerBottom - tabSize/2) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Left outer tab
+      ctx.beginPath();
+      ctx.rect(cardX + (outerLeft - tabSize/2) * scale, cardY + (cardImage.height/2 - tabSize/2 - 10) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Right outer tab
+      ctx.beginPath();
+      ctx.rect(cardX + (outerRight - tabSize/2) * scale, cardY + (cardImage.height/2 - tabSize/2 - 10) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Left inner tab
+      ctx.beginPath();
+      ctx.rect(cardX + (innerLeft - tabSize/2) * scale, cardY + (cardImage.height/2 - tabSize/2 + 10) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
+      
+      // Right inner tab
+      ctx.beginPath();
+      ctx.rect(cardX + (innerRight - tabSize/2) * scale, cardY + (cardImage.height/2 - tabSize/2 + 10) * scale, tabSize * scale, tabSize * scale);
+      ctx.fill();
+      ctx.stroke();
 
+      // Calculate centering percentages
       const verticalTopGap = innerTop - outerTop;
       const verticalBottomGap = outerBottom - innerBottom;
       const verticalTotal = verticalTopGap + verticalBottomGap;
       const verticalPercent = verticalTotal ? (verticalTopGap / verticalTotal) * 100 : 0;
+      
       const horizontalLeftGap = innerLeft - outerLeft;
       const horizontalRightGap = outerRight - innerRight;
       const horizontalTotal = horizontalLeftGap + horizontalRightGap;
       const horizontalPercent = horizontalTotal ? (horizontalLeftGap / horizontalTotal) * 100 : 0;
-      verticalInfo.textContent = "Vertical: " + verticalPercent.toFixed(1) + "% top / " + (100 - verticalPercent).toFixed(1) + "% bottom";
-      horizontalInfo.textContent = "Horizontal: " + horizontalPercent.toFixed(1) + "% left / " + (100 - horizontalPercent).toFixed(1) + "% right";
+      
+      // Update the info display
+      verticalInfo.textContent = verticalPercent.toFixed(1) + "% top / " + (100 - verticalPercent).toFixed(1) + "% bottom";
+      horizontalInfo.textContent = horizontalPercent.toFixed(1) + "% left / " + (100 - horizontalPercent).toFixed(1) + "% right";
+      
+      // Calculate and display grades
+      calculateGrade(verticalPercent, horizontalPercent);
     }
 
     function loadFile(file) {
@@ -295,6 +1117,27 @@
         const reader = new FileReader();
         reader.onload = function(e) { cardImage.src = e.target.result; };
         reader.readAsDataURL(file);
+      }
+    }
+
+    function resetTool() {
+      rotationAngle = 0;
+      rad = 0;
+      rotateSlider.value = 0;
+      angleValue.textContent = "0°";
+      
+      if (cardImage.complete && cardImage.naturalWidth > 0) {
+        // Reset borders to default positions
+        outerTop = cardImage.height * 0.05;
+        outerBottom = cardImage.height * 0.95;
+        outerLeft = cardImage.width * 0.05;
+        outerRight = cardImage.width * 0.95;
+        innerTop = cardImage.height * 0.15;
+        innerBottom = cardImage.height * 0.85;
+        innerLeft = cardImage.width * 0.15;
+        innerRight = cardImage.width * 0.85;
+        
+        drawCanvas();
       }
     }
 
@@ -314,6 +1157,8 @@
     canvas.addEventListener('mousemove', (evt) => {
       if (!dragging) return;
       const pos = getMousePosInCardCoords(evt);
+      
+      // Only update the border that's being dragged
       switch(dragItem) {
         case "outerTop": outerTop = Math.min(pos.y, innerTop); break;
         case "innerTop": innerTop = Math.min(Math.max(pos.y, outerTop), innerBottom); break;
@@ -324,6 +1169,7 @@
         case "innerRight": innerRight = Math.max(Math.min(pos.x, outerRight), innerLeft); break;
         case "outerRight": outerRight = Math.max(pos.x, innerRight); break;
       }
+      
       drawCanvas();
     });
 
@@ -348,6 +1194,8 @@
       evt.preventDefault();
       if (!dragging) return;
       const pos = getTouchPosInCardCoords(evt);
+      
+      // Only update the border that's being dragged (same as mousemove)
       switch(dragItem) {
         case "outerTop": outerTop = Math.min(pos.y, innerTop); break;
         case "innerTop": innerTop = Math.min(Math.max(pos.y, outerTop), innerBottom); break;
@@ -358,6 +1206,7 @@
         case "innerRight": innerRight = Math.max(Math.min(pos.x, outerRight), innerLeft); break;
         case "outerRight": outerRight = Math.max(pos.x, innerRight); break;
       }
+      
       drawCanvas();
     }, { passive: false });
 
@@ -368,10 +1217,12 @@
       evt.preventDefault();
       canvasWrapper.classList.add('dragover');
     });
+    
     canvasWrapper.addEventListener('dragleave', (evt) => {
       evt.preventDefault();
       canvasWrapper.classList.remove('dragover');
     });
+    
     canvasWrapper.addEventListener('drop', (evt) => {
       evt.preventDefault();
       canvasWrapper.classList.remove('dragover');
@@ -402,8 +1253,20 @@
       loadFile(file);
     });
 
+    resetButton.addEventListener('click', resetTool);
+    
+    // The aspect ratio toggle is now disabled since we've removed that functionality
+    aspectRatioToggle.addEventListener('change', () => {
+      aspectRatioLocked = false; // Always keep this false to prevent linked movement
+      aspectRatioToggle.checked = false; // Force toggle to off position
+    });
+    
+    // Initialize with aspect ratio locking disabled
+    aspectRatioLocked = false;
+    aspectRatioToggle.checked = false;
+
     cardImage.onload = () => {
-      scale = Math.min(canvas.width / cardImage.width, canvas.height / cardImage.height);
+      scale = Math.min(canvas.width / cardImage.width, canvas.height / cardImage.height) * 0.9; // Slightly smaller to show borders
       outerTop = cardImage.height * 0.05;
       outerBottom = cardImage.height * 0.95;
       outerLeft = cardImage.width * 0.05;
@@ -415,6 +1278,20 @@
       instructions.style.display = "none";
       drawCanvas();
     };
+
+    // Company tabs functionality
+    companyTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs and content
+        companyTabs.forEach(t => t.classList.remove('active'));
+        companyContents.forEach(c => c.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        const tabId = tab.getAttribute('data-tab');
+        document.getElementById(`${tabId}-content`).classList.add('active');
+      });
+    });
 
     drawCanvas();
   </script>
