@@ -41,23 +41,23 @@ Click on each company's tab to view their specific centering requirements.
 The Card Centering Tool is built with vanilla JavaScript, HTML5 Canvas, and CSS. It runs entirely in the browser with no server dependencies.
 
 ### Project Structure
-card-centering-tool/
-│
-├── index.html        # Main HTML file
-├── styles.css        # CSS styles
-├── js/               # JavaScript files directory
-│   ├── app.js               # Main application logic
-│   ├── borderHandler.js     # Manages border positioning and dragging functionality
-│   ├── canvasDrawing.s      # Controls canvas rendering and drawing operations
-│   ├── gradingCalculator.js # Calculates centering percentages and grading assessments
-│   ├── utils.js             # Utility functions for coordinate calculations and transformations
-│   └── constants.js         # Defines application constants and configuration values
-│   
-└── img/              # Images directory
-├── psa-logo-dark.png
-├── bgs-logo-dark.png
-├── cgc-logo-dark.png
-└── tag-logo-dark.png
+   card-centering-tool/
+   │
+   ├── index.html        # Main HTML file
+   ├── styles.css        # CSS styles
+   ├── js/               # JavaScript files directory
+   │   ├── app.js               # Main application logic
+   │   ├── borderHandler.js     # Manages border positioning and dragging functionality
+   │   ├── canvasDrawing.s      # Controls canvas rendering and drawing operations
+   │   ├── gradingCalculator.js # Calculates centering percentages and grading assessments
+   │   ├── utils.js             # Utility functions for coordinate calculations and transformations
+   │   └── constants.js         # Defines application constants and configuration values
+   │   
+   └── img/              # Images directory
+   ├── psa-logo-dark.png
+   ├── bgs-logo-dark.png
+   ├── cgc-logo-dark.png
+   └── tag-logo-dark.png
 
 ### Browser Compatibility
 
