@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       // Set BGS grade
-      if (bgsWorstCentering <= 2.5) {
+      if (bgsWorstCentering <= 0.5) {
         bgsGrade.textContent = "Pristine (10)";
         bgsGrade.className = "grade-value grade-excellent";
       } else if (bgsWorstCentering <= 5) {

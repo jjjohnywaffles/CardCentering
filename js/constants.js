@@ -1,32 +1,27 @@
-// Constants used throughout the application
-const CONSTANTS = {
-    // Canvas and rendering constants
-    TOLERANCE: 20, // hit tolerance (in natural card coordinates)
-    TAB_SIZE: 15,  // size of draggable tab
-  
-    // Default border positions (will be calculated based on image dimensions)
-    DEFAULT_OUTER_TOP_RATIO: 0.05,
-    DEFAULT_OUTER_BOTTOM_RATIO: 0.95,
-    DEFAULT_OUTER_LEFT_RATIO: 0.05,
-    DEFAULT_OUTER_RIGHT_RATIO: 0.95,
-    DEFAULT_INNER_TOP_RATIO: 0.15,
-    DEFAULT_INNER_BOTTOM_RATIO: 0.85,
-    DEFAULT_INNER_LEFT_RATIO: 0.15,
-    DEFAULT_INNER_RIGHT_RATIO: 0.85,
-  
-    // Grading thresholds
-    PSA_THRESHOLDS: {
-      GEM_MINT: 5,  // 55/45 or better (5% deviation from center)
-      MINT: 10,     // 60/40 or better (10% deviation from center)
-      NM_MT: 15,    // 65/35 or better (15% deviation from center)
-      NEAR_MINT: 20 // 70/30 or better (20% deviation from center)
-    },
-    
-    BGS_THRESHOLDS: {
-      PRISTINE: 2.5,  // 50/50 both axes (2.5% deviation from center)
-      GEM_MINT: 5,    // 55/45 or better (5% deviation from center)
-      MINT: 10,       // 60/40 to 65/35 (10% deviation from center)
-      NM_MT_PLUS: 15, // 65/35 to 70/30 (15% deviation from center)
-      NM_MT: 20       // 70/30 to 75/25 (20% deviation from center)
-    }
-  };
+// Application constants
+export const CANVAS_BACKGROUND_COLOR = "#1a202c";
+export const OUTER_BORDER_COLOR = "#3182ce";
+export const INNER_BORDER_COLOR = "#ecc94b";
+export const BORDER_WIDTH = 3;
+export const TAB_SIZE = 15;
+export const HIT_TOLERANCE = 20;
+export const IMAGE_SCALE_FACTOR = 0.95;
+
+// PSA Grades
+export const PSA_GRADES = [
+  { max: 5, text: "Gem Mint (PSA 10)", class: "grade-excellent" },
+  { max: 10, text: "Mint (PSA 9)", class: "grade-good" },
+  { max: 15, text: "NM-MT (PSA 8)", class: "grade-good" },
+  { max: 20, text: "Near Mint (PSA 7)", class: "grade-fair" },
+  { max: Infinity, text: "EX-NM or Lower", class: "grade-poor" }
+];
+
+// BGS Grades
+export const BGS_GRADES = [
+  { max: 2.5, text: "Pristine (10)", class: "grade-excellent" },
+  { max: 5, text: "Gem Mint (9.5)", class: "grade-excellent" },
+  { max: 10, text: "Mint (9.0)", class: "grade-good" },
+  { max: 15, text: "NM-MT+ (8.5)", class: "grade-good" },
+  { max: 20, text: "NM-MT (8.0)", class: "grade-fair" },
+  { max: Infinity, text: "NM or Lower", class: "grade-poor" }
+];

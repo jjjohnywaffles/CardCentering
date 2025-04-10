@@ -1,182 +1,214 @@
+// Canvas drawing functions
+import { 
+  CANVAS_BACKGROUND_COLOR, 
+  OUTER_BORDER_COLOR, 
+  INNER_BORDER_COLOR, 
+  BORDER_WIDTH,
+  TAB_SIZE 
+} from './constants.js';
+
 /**
- * Initialize border positions on an image
- * @param {HTMLImageElement} cardImage - The card image
- * @param {Object} borders - The borders object to update
+ * Resize the canvas to fit its container
+ * @param {HTMLCanvasElement} canvas - Canvas element
  */
-function initializeBordersFromImage(cardImage, borders) {
-    borders.outerTop = cardImage.height * CONSTANTS.DEFAULT_OUTER_TOP_RATIO;
-    borders.outerBottom = cardImage.height * CONSTANTS.DEFAULT_OUTER_BOTTOM_RATIO;
-    borders.outerLeft = cardImage.width * CONSTANTS.DEFAULT_OUTER_LEFT_RATIO;
-    borders.outerRight = cardImage.width * CONSTANTS.DEFAULT_OUTER_RIGHT_RATIO;
-    borders.innerTop = cardImage.height * CONSTANTS.DEFAULT_INNER_TOP_RATIO;
-    borders.innerBottom = cardImage.height * CONSTANTS.DEFAULT_INNER_BOTTOM_RATIO;
-    borders.innerLeft = cardImage.width * CONSTANTS.DEFAULT_INNER_LEFT_RATIO;
-    borders.innerRight = cardImage.width * CONSTANTS.DEFAULT_INNER_RIGHT_RATIO;
+export function resizeCanvas(canvas) {
+  try {
+    const container = document.getElementById('canvasContainer');
+    if (container) {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      console.log(`Canvas resized to ${canvas.width}x${canvas.height}`);
+    } else {
+      console.error('Canvas container not found');
+    }
+  } catch (error) {
+    console.error('Error resizing canvas:', error);
   }
-  
-  /**
-   * Draw the canvas with the current state
-   * @param {HTMLCanvasElement} canvas - The canvas element
-   * @param {CanvasRenderingContext2D} ctx - The canvas 2D context
-   * @param {HTMLImageElement} cardImage - The card image
-   * @param {Object} state - The application state
-   */
-  function drawCanvas(canvas, ctx, cardImage, state) {
+}
+
+/**
+ * Draw the canvas with current state
+ * @param {HTMLCanvasElement} canvas - Canvas element
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {Object} state - Application state
+ */
+export function drawCanvas(canvas, ctx, state) {
+  try {
     // Clear the canvas with dark background
-    ctx.fillStyle = "#1a202c";
+    ctx.fillStyle = CANVAS_BACKGROUND_COLOR;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // If no image is loaded, exit early
-    if (!cardImage.complete || cardImage.naturalWidth === 0) {
+    if (!state.hasImage || !state.image) {
       return;
     }
     
-    const { cardX, cardY, cardWidthScaled, cardHeightScaled } = getCardBox(cardImage, canvas, state.scale);
-    const { borders } = state;
-  
+    const img = state.image;
+    const scale = state.scale;
+    const borders = state.borders;
+    
+    // Calculate image position (centered in canvas)
+    const imgWidthScaled = img.width * scale;
+    const imgHeightScaled = img.height * scale;
+    const imgX = (canvas.width - imgWidthScaled) / 2;
+    const imgY = (canvas.height - imgHeightScaled) / 2;
+    
+    console.log(`Drawing image: ${img.width}x${img.height} at scale ${scale}`);
+    
     // Draw the rotated image
     ctx.save();
-    const centerX = cardX + cardWidthScaled/2;
-    const centerY = cardY + cardHeightScaled/2;
+    const centerX = imgX + imgWidthScaled/2;
+    const centerY = imgY + imgHeightScaled/2;
     ctx.translate(centerX, centerY);
     ctx.rotate(state.rad);
-    ctx.drawImage(cardImage,
-      -cardImage.width * state.scale / 2,
-      -cardImage.height * state.scale / 2,
-      cardImage.width * state.scale,
-      cardImage.height * state.scale);
+    
+    try {
+      ctx.drawImage(img, -imgWidthScaled/2, -imgHeightScaled/2, imgWidthScaled, imgHeightScaled);
+    } catch (err) {
+      console.error('Error drawing image:', err);
+    }
+    
     ctx.restore();
-  
-    // Draw the card border - make it more visible
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#2c5282";
-    ctx.strokeRect(cardX, cardY, cardWidthScaled, cardHeightScaled);
-  
+    
+    drawBorders(ctx, imgX, imgY, imgWidthScaled, imgHeightScaled, borders, scale);
+    drawDraggableTabs(ctx, imgX, imgY, img.width, img.height, borders, scale);
+  } catch (error) {
+    console.error('Error in drawCanvas:', error);
+  }
+}
+
+/**
+ * Draw outer and inner borders
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} imgX - Image X position
+ * @param {number} imgY - Image Y position
+ * @param {number} imgWidthScaled - Scaled image width
+ * @param {number} imgHeightScaled - Scaled image height
+ * @param {Object} borders - Border positions
+ * @param {number} scale - Scale factor
+ */
+function drawBorders(ctx, imgX, imgY, imgWidthScaled, imgHeightScaled, borders, scale) {
+  try {
     // Draw outer borders with increased width
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#3182ce";
+    ctx.lineWidth = BORDER_WIDTH;
+    ctx.strokeStyle = OUTER_BORDER_COLOR;
     
     // Horizontal outer borders
     ctx.beginPath();
-    ctx.moveTo(cardX, cardY + borders.outerTop * state.scale);
-    ctx.lineTo(cardX + cardWidthScaled, cardY + borders.outerTop * state.scale);
+    ctx.moveTo(imgX, imgY + borders.outerTop * scale);
+    ctx.lineTo(imgX + imgWidthScaled, imgY + borders.outerTop * scale);
     ctx.stroke();
     
     ctx.beginPath();
-    ctx.moveTo(cardX, cardY + borders.outerBottom * state.scale);
-    ctx.lineTo(cardX + cardWidthScaled, cardY + borders.outerBottom * state.scale);
+    ctx.moveTo(imgX, imgY + borders.outerBottom * scale);
+    ctx.lineTo(imgX + imgWidthScaled, imgY + borders.outerBottom * scale);
     ctx.stroke();
     
     // Vertical outer borders
     ctx.beginPath();
-    ctx.moveTo(cardX + borders.outerLeft * state.scale, cardY);
-    ctx.lineTo(cardX + borders.outerLeft * state.scale, cardY + cardHeightScaled);
+    ctx.moveTo(imgX + borders.outerLeft * scale, imgY);
+    ctx.lineTo(imgX + borders.outerLeft * scale, imgY + imgHeightScaled);
     ctx.stroke();
     
     ctx.beginPath();
-    ctx.moveTo(cardX + borders.outerRight * state.scale, cardY);
-    ctx.lineTo(cardX + borders.outerRight * state.scale, cardY + cardHeightScaled);
+    ctx.moveTo(imgX + borders.outerRight * scale, imgY);
+    ctx.lineTo(imgX + borders.outerRight * scale, imgY + imgHeightScaled);
     ctx.stroke();
-  
+    
     // Inner borders
-    ctx.strokeStyle = "#ecc94b";
+    ctx.strokeStyle = INNER_BORDER_COLOR;
     
     // Horizontal inner borders
     ctx.beginPath();
-    ctx.moveTo(cardX, cardY + borders.innerTop * state.scale);
-    ctx.lineTo(cardX + cardWidthScaled, cardY + borders.innerTop * state.scale);
+    ctx.moveTo(imgX, imgY + borders.innerTop * scale);
+    ctx.lineTo(imgX + imgWidthScaled, imgY + borders.innerTop * scale);
     ctx.stroke();
     
     ctx.beginPath();
-    ctx.moveTo(cardX, cardY + borders.innerBottom * state.scale);
-    ctx.lineTo(cardX + cardWidthScaled, cardY + borders.innerBottom * state.scale);
+    ctx.moveTo(imgX, imgY + borders.innerBottom * scale);
+    ctx.lineTo(imgX + imgWidthScaled, imgY + borders.innerBottom * scale);
     ctx.stroke();
     
     // Vertical inner borders
     ctx.beginPath();
-    ctx.moveTo(cardX + borders.innerLeft * state.scale, cardY);
-    ctx.lineTo(cardX + borders.innerLeft * state.scale, cardY + cardHeightScaled);
+    ctx.moveTo(imgX + borders.innerLeft * scale, imgY);
+    ctx.lineTo(imgX + borders.innerLeft * scale, imgY + imgHeightScaled);
     ctx.stroke();
     
     ctx.beginPath();
-    ctx.moveTo(cardX + borders.innerRight * state.scale, cardY);
-    ctx.lineTo(cardX + borders.innerRight * state.scale, cardY + cardHeightScaled);
+    ctx.moveTo(imgX + borders.innerRight * scale, imgY);
+    ctx.lineTo(imgX + borders.innerRight * scale, imgY + imgHeightScaled);
     ctx.stroke();
-  
-    // Draw the draggable tabs
+  } catch (error) {
+    console.error('Error in drawBorders:', error);
+  }
+}
+
+/**
+ * Draw draggable tabs for borders
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {number} imgX - Image X position
+ * @param {number} imgY - Image Y position
+ * @param {number} imgWidth - Image width
+ * @param {number} imgHeight - Image height
+ * @param {Object} borders - Border positions
+ * @param {number} scale - Scale factor
+ */
+function drawDraggableTabs(ctx, imgX, imgY, imgWidth, imgHeight, borders, scale) {
+  try {
+    // Draw draggable tabs
     ctx.fillStyle = "white";
     ctx.strokeStyle = "#2c5282";
     ctx.lineWidth = 1;
-    const tabSize = CONSTANTS.TAB_SIZE;
     
     // Top outer tab
     ctx.beginPath();
-    ctx.rect(cardX + (cardImage.width/2 - tabSize/2 - 10) * state.scale, cardY + (borders.outerTop - tabSize/2) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (imgWidth/2 - TAB_SIZE/2 - 10) * scale, imgY + (borders.outerTop - TAB_SIZE/2) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Bottom outer tab
     ctx.beginPath();
-    ctx.rect(cardX + (cardImage.width/2 - tabSize/2 - 10) * state.scale, cardY + (borders.outerBottom - tabSize/2) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (imgWidth/2 - TAB_SIZE/2 - 10) * scale, imgY + (borders.outerBottom - TAB_SIZE/2) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Top inner tab
     ctx.beginPath();
-    ctx.rect(cardX + (cardImage.width/2 - tabSize/2 + 10) * state.scale, cardY + (borders.innerTop - tabSize/2) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (imgWidth/2 - TAB_SIZE/2 + 10) * scale, imgY + (borders.innerTop - TAB_SIZE/2) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Bottom inner tab
     ctx.beginPath();
-    ctx.rect(cardX + (cardImage.width/2 - tabSize/2 + 10) * state.scale, cardY + (borders.innerBottom - tabSize/2) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (imgWidth/2 - TAB_SIZE/2 + 10) * scale, imgY + (borders.innerBottom - TAB_SIZE/2) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Left outer tab
     ctx.beginPath();
-    ctx.rect(cardX + (borders.outerLeft - tabSize/2) * state.scale, cardY + (cardImage.height/2 - tabSize/2 - 10) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (borders.outerLeft - TAB_SIZE/2) * scale, imgY + (imgHeight/2 - TAB_SIZE/2 - 10) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Right outer tab
     ctx.beginPath();
-    ctx.rect(cardX + (borders.outerRight - tabSize/2) * state.scale, cardY + (cardImage.height/2 - tabSize/2 - 10) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (borders.outerRight - TAB_SIZE/2) * scale, imgY + (imgHeight/2 - TAB_SIZE/2 - 10) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Left inner tab
     ctx.beginPath();
-    ctx.rect(cardX + (borders.innerLeft - tabSize/2) * state.scale, cardY + (cardImage.height/2 - tabSize/2 + 10) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (borders.innerLeft - TAB_SIZE/2) * scale, imgY + (imgHeight/2 - TAB_SIZE/2 + 10) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
     
     // Right inner tab
     ctx.beginPath();
-    ctx.rect(cardX + (borders.innerRight - tabSize/2) * state.scale, cardY + (cardImage.height/2 - tabSize/2 + 10) * state.scale, tabSize * state.scale, tabSize * state.scale);
+    ctx.rect(imgX + (borders.innerRight - TAB_SIZE/2) * scale, imgY + (imgHeight/2 - TAB_SIZE/2 + 10) * scale, TAB_SIZE * scale, TAB_SIZE * scale);
     ctx.fill();
     ctx.stroke();
-  
-    // Calculate centering percentages
-    const centeringPercentages = calculateCenteringPercentages(borders);
-    const { verticalPercent, horizontalPercent } = centeringPercentages;
-    
-    // Update the info display
-    document.getElementById('verticalInfo').textContent = 
-      verticalPercent.toFixed(1) + "% top / " + (100 - verticalPercent).toFixed(1) + "% bottom";
-    document.getElementById('horizontalInfo').textContent = 
-      horizontalPercent.toFixed(1) + "% left / " + (100 - horizontalPercent).toFixed(1) + "% right";
-    
-    // Calculate and display grades
-    const grades = calculateGrades(verticalPercent, horizontalPercent);
-    
-    // Update PSA grade
-    const psaGradeElement = document.getElementById('psaGrade');
-    psaGradeElement.textContent = grades.psa.text;
-    psaGradeElement.className = "grade-value " + grades.psa.class;
-    
-    // Update BGS grade
-    const bgsGradeElement = document.getElementById('bgsGrade');
-    bgsGradeElement.textContent = grades.bgs.text;
-    bgsGradeElement.className = "grade-value " + grades.bgs.class;
+  } catch (error) {
+    console.error('Error in drawDraggableTabs:', error);
   }
+}

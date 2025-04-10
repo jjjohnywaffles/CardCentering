@@ -1,97 +1,68 @@
+// Image handling functions
+import { initializeBorders } from './utils.js';
+import { calculateScale } from './utils.js';
+import { IMAGE_SCALE_FACTOR } from './constants.js';
+import { drawCanvas } from './canvasDrawing.js';
+
 /**
- * Load an image file into the card image
- * @param {File} file - The image file to load
- * @param {HTMLImageElement} cardImage - The card image element
+ * Process the uploaded file
+ * @param {File} file - The file to process
+ * @param {HTMLCanvasElement} canvas - Canvas element
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {Object} state - Application state
+ * @param {HTMLElement} instructions - Instructions element
+ * @param {Function} updateMeasurements - Function to update measurements
  */
-function loadFile(file, cardImage) {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function(e) { 
-        cardImage.src = e.target.result; 
-      };
-      reader.readAsDataURL(file);
-    }
+export function processFile(file, canvas, ctx, state, instructions, updateMeasurements) {
+  // Check if file is an image
+  if (!file.type.match('image.*')) {
+    alert("Please select an image file.");
+    return;
   }
+
+  const reader = new FileReader();
   
-  /**
-   * Initialize border positions based on loaded card image
-   * @param {HTMLImageElement} cardImage - The card image element
-   * @param {HTMLCanvasElement} canvas - The canvas element
-   * @returns {Object} - Initial border positions and scale
-   */
-  function initializeImageAndBorders(cardImage, canvas) {
-    // Calculate initial scale to fit image in canvas
-    const scale = Math.min(canvas.width / cardImage.width, canvas.height / cardImage.height) * 0.9;
+  reader.onload = function(event) {
+    const img = new Image();
     
-    // Set initial border positions
-    const borders = {
-      outerTop: cardImage.height * CONSTANTS.DEFAULT_OUTER_TOP_RATIO,
-      outerBottom: cardImage.height * CONSTANTS.DEFAULT_OUTER_BOTTOM_RATIO,
-      outerLeft: cardImage.width * CONSTANTS.DEFAULT_OUTER_LEFT_RATIO,
-      outerRight: cardImage.width * CONSTANTS.DEFAULT_OUTER_RIGHT_RATIO,
-      innerTop: cardImage.height * CONSTANTS.DEFAULT_INNER_TOP_RATIO,
-      innerBottom: cardImage.height * CONSTANTS.DEFAULT_INNER_BOTTOM_RATIO,
-      innerLeft: cardImage.width * CONSTANTS.DEFAULT_INNER_LEFT_RATIO,
-      innerRight: cardImage.width * CONSTANTS.DEFAULT_INNER_RIGHT_RATIO
+    img.onload = function() {
+      // Store the image in state
+      state.image = img;
+      state.hasImage = true;
+      
+      // Hide instructions
+      if (instructions) {
+        instructions.style.display = 'none';
+      }
+      
+      // Initialize borders based on image dimensions
+      state.borders = initializeBorders(img.width, img.height);
+      
+      // Calculate scale
+      state.scale = calculateScale(img.width, img.height, canvas.width, canvas.height, IMAGE_SCALE_FACTOR);
+      
+      // Draw the canvas
+      drawCanvas(canvas, ctx, state);
+      
+      // Update measurements
+      if (typeof updateMeasurements === 'function') {
+        updateMeasurements();
+      }
     };
     
-    // Hide instructions
-    document.getElementById('instructions').style.display = 'none';
+    img.onerror = function() {
+      console.error("Failed to load image");
+      alert("Failed to load image. Please try another image.");
+    };
     
-    return { scale, borders };
-  }
+    // Set the image source from the FileReader result
+    img.src = event.target.result;
+  };
   
-  /**
-   * Set up file drop event listeners
-   * @param {HTMLElement} canvasWrapper - The canvas wrapper element
-   * @param {HTMLImageElement} cardImage - The card image element
-   */
-  function setupFileDrop(canvasWrapper, cardImage) {
-    canvasWrapper.addEventListener('dragover', (evt) => {
-      evt.preventDefault();
-      canvasWrapper.classList.add('dragover');
-    });
-    
-    canvasWrapper.addEventListener('dragleave', (evt) => {
-      evt.preventDefault();
-      canvasWrapper.classList.remove('dragover');
-    });
-    
-    canvasWrapper.addEventListener('drop', (evt) => {
-      evt.preventDefault();
-      canvasWrapper.classList.remove('dragover');
-      const files = evt.dataTransfer.files;
-      if (files.length > 0) {
-        loadFile(files[0], cardImage);
-        console.log("File dropped:", files[0].name);
-      }
-    });
-  }
+  reader.onerror = function() {
+    console.error("Error reading file");
+    alert("Error reading file. Please try again.");
+  };
   
-  /**
-   * Reset the tool to initial state
-   * @param {HTMLImageElement} cardImage - The card image element
-   * @param {Object} state - The application state object
-   * @param {Function} drawCanvas - The function to redraw the canvas
-   */
-  function resetTool(cardImage, state, drawCanvas) {
-    // Reset rotation
-    state.rotationAngle = 0;
-    state.rad = 0;
-    document.getElementById('rotateSlider').value = 0;
-    document.getElementById('angleValue').textContent = "0°";
-    
-    if (cardImage.complete && cardImage.naturalWidth > 0) {
-      // Reset borders to default positions
-      state.borders.outerTop = cardImage.height * CONSTANTS.DEFAULT_OUTER_TOP_RATIO;
-      state.borders.outerBottom = cardImage.height * CONSTANTS.DEFAULT_OUTER_BOTTOM_RATIO;
-      state.borders.outerLeft = cardImage.width * CONSTANTS.DEFAULT_OUTER_LEFT_RATIO;
-      state.borders.outerRight = cardImage.width * CONSTANTS.DEFAULT_OUTER_RIGHT_RATIO;
-      state.borders.innerTop = cardImage.height * CONSTANTS.DEFAULT_INNER_TOP_RATIO;
-      state.borders.innerBottom = cardImage.height * CONSTANTS.DEFAULT_INNER_BOTTOM_RATIO;
-      state.borders.innerLeft = cardImage.width * CONSTANTS.DEFAULT_INNER_LEFT_RATIO;
-      state.borders.innerRight = cardImage.width * CONSTANTS.DEFAULT_INNER_RIGHT_RATIO;
-      
-      drawCanvas();
-    }
-  }
+  reader.readAsDataURL(file);
+}

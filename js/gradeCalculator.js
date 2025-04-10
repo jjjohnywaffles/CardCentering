@@ -1,83 +1,79 @@
-// Utility functions
+// Grade calculation functions
+import { PSA_GRADES, BGS_GRADES } from './constants.js';
 
 /**
- * Calculates the card's bounding box based on the current scale
- * @param {HTMLImageElement} cardImage - The card image
- * @param {HTMLCanvasElement} canvas - The canvas element
- * @param {Number} scale - The current scale factor
- * @returns {Object} - Card box dimensions and position
+ * Calculate centering percentages and update info display
+ * @param {Object} borders - Border positions
+ * @param {HTMLElement} verticalInfo - Vertical info display element
+ * @param {HTMLElement} horizontalInfo - Horizontal info display element
+ * @return {Object} - Calculated centering data
  */
-function getCardBox(cardImage, canvas, scale) {
-    const cardWidthScaled = cardImage.width * scale;
-    const cardHeightScaled = cardImage.height * scale;
-    const cardX = (canvas.width - cardWidthScaled) / 2;
-    const cardY = (canvas.height - cardHeightScaled) / 2;
-    return { cardX, cardY, cardWidthScaled, cardHeightScaled };
-  }
+export function calculateCentering(borders) {
+  // Calculate centering percentages
+  const verticalTopGap = borders.innerTop - borders.outerTop;
+  const verticalBottomGap = borders.outerBottom - borders.innerBottom;
+  const verticalTotal = verticalTopGap + verticalBottomGap;
+  const verticalPercent = verticalTotal ? (verticalTopGap / verticalTotal) * 100 : 50;
   
-  /**
-   * Checks if a point is inside a rectangle
-   * @param {Object} pos - The point position {x, y}
-   * @param {Object} rect - The rectangle {x, y, width, height}
-   * @returns {Boolean} - True if point is in rectangle
-   */
-  function isInRect(pos, rect) {
-    return pos.x >= rect.x && pos.x <= rect.x + rect.width &&
-           pos.y >= rect.y && pos.y <= rect.y + rect.height;
-  }
+  const horizontalLeftGap = borders.innerLeft - borders.outerLeft;
+  const horizontalRightGap = borders.outerRight - borders.innerRight;
+  const horizontalTotal = horizontalLeftGap + horizontalRightGap;
+  const horizontalPercent = horizontalTotal ? (horizontalLeftGap / horizontalTotal) * 100 : 50;
   
-  /**
-   * Gets canvas coordinates from a mouse event
-   * @param {MouseEvent} evt - The mouse event
-   * @param {HTMLCanvasElement} canvas - The canvas element
-   * @returns {Object} - {x, y} coordinates relative to canvas
-   */
-  function getCanvasCoords(evt, canvas) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return {
-      x: (evt.clientX - rect.left) * scaleX,
-      y: (evt.clientY - rect.top) * scaleY
-    };
-  }
+  // Calculate worst centering deviation
+  const worstCentering = Math.max(
+    Math.abs(verticalPercent - 50),
+    Math.abs(horizontalPercent - 50)
+  );
   
-  /**
-   * Gets mouse position in card coordinates (accounting for scale)
-   * @param {MouseEvent} evt - The mouse event
-   * @param {HTMLCanvasElement} canvas - The canvas element
-   * @param {Object} cardBox - The card box information
-   * @param {Number} scale - The current scale factor
-   * @returns {Object} - {x, y} coordinates relative to the card
-   */
-  function getMousePosInCardCoords(evt, canvas, cardBox, scale) {
-    const pos = getCanvasCoords(evt, canvas);
-    return { 
-      x: (pos.x - cardBox.cardX) / scale, 
-      y: (pos.y - cardBox.cardY) / scale 
-    };
-  }
+  return {
+    verticalPercent,
+    horizontalPercent,
+    worstCentering
+  };
+}
+
+/**
+ * Update measurement displays with centering data
+ * @param {Object} centeringData - Centering calculation data
+ * @param {HTMLElement} verticalInfo - Vertical info display element
+ * @param {HTMLElement} horizontalInfo - Horizontal info display element
+ */
+export function updateMeasurementDisplay(centeringData, verticalInfo, horizontalInfo) {
+  // Update the info display
+  verticalInfo.textContent = centeringData.verticalPercent.toFixed(1) + "% top / " + 
+    (100 - centeringData.verticalPercent).toFixed(1) + "% bottom";
   
-  /**
-   * Gets touch position in card coordinates
-   * @param {TouchEvent} evt - The touch event
-   * @param {HTMLCanvasElement} canvas - The canvas element
-   * @param {Object} cardBox - The card box information
-   * @param {Number} scale - The current scale factor
-   * @returns {Object} - {x, y} coordinates relative to the card
-   */
-  function getTouchPosInCardCoords(evt, canvas, cardBox, scale) {
-    evt.preventDefault();
-    const touch = evt.touches[0] || evt.changedTouches[0];
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const pos = {
-      x: (touch.clientX - rect.left) * scaleX,
-      y: (touch.clientY - rect.top) * scaleY
-    };
-    return { 
-      x: (pos.x - cardBox.cardX) / scale,
-      y: (pos.y - cardBox.cardY) / scale 
-    };
+  horizontalInfo.textContent = centeringData.horizontalPercent.toFixed(1) + "% left / " + 
+    (100 - centeringData.horizontalPercent).toFixed(1) + "% right";
+}
+
+/**
+ * Calculate and display PSA grade based on centering
+ * @param {number} worstCentering - Worst centering deviation percentage
+ * @param {HTMLElement} psaGrade - PSA grade display element
+ */
+export function setPSAGrade(worstCentering, psaGrade) {
+  for (const grade of PSA_GRADES) {
+    if (worstCentering <= grade.max) {
+      psaGrade.textContent = grade.text;
+      psaGrade.className = `grade-value ${grade.class}`;
+      break;
+    }
   }
+}
+
+/**
+ * Calculate and display BGS grade based on centering
+ * @param {number} worstCentering - Worst centering deviation percentage
+ * @param {HTMLElement} bgsGrade - BGS grade display element
+ */
+export function setBGSGrade(worstCentering, bgsGrade) {
+  for (const grade of BGS_GRADES) {
+    if (worstCentering <= grade.max) {
+      bgsGrade.textContent = grade.text;
+      bgsGrade.className = `grade-value ${grade.class}`;
+      break;
+    }
+  }
+}
