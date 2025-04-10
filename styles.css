@@ -51,7 +51,7 @@
     overflow: hidden;
     flex: 1;
     min-width: 300px;
-    max-width: 900px;
+    max-width: 1000px; /* Increased from 900px for wider panel */
     display: flex;
     flex-direction: column;
   }
@@ -164,7 +164,7 @@
     position: relative;
     transition: border 0.3s;
     margin-bottom: 16px;
-    height: 600px; /* Increased height for better visibility */
+    height: 800px; /* Increased height for better visibility */
   }
   
   #canvasWrapper.dragover {
@@ -336,7 +336,6 @@
   
   .grading-content {
     padding: 20px;
-    flex-grow: 1;
   }
   
   .company-tabs {
@@ -442,8 +441,8 @@
   }
   
   .tab-content-wrapper {
-    max-height: 400px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
   }
   
   @media (max-width: 768px) {

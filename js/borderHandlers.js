@@ -9,6 +9,15 @@ function getTabRect(border, borders, cardImage) {
     const { outerTop, outerBottom, outerLeft, outerRight, innerTop, innerBottom, innerLeft, innerRight } = borders;
     const tabSize = CONSTANTS.TAB_SIZE;
     
+    // Make sure borders are defined
+    if (typeof outerTop === 'undefined' || typeof outerBottom === 'undefined' || 
+        typeof outerLeft === 'undefined' || typeof outerRight === 'undefined' ||
+        typeof innerTop === 'undefined' || typeof innerBottom === 'undefined' ||
+        typeof innerLeft === 'undefined' || typeof innerRight === 'undefined') {
+      console.error("Border values are undefined");
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+    
     switch(border) {
       case "outerTop":
         return { x: cardImage.width/2 - tabSize/2 - 10, y: outerTop - tabSize/2, width: tabSize, height: tabSize };
@@ -182,8 +191,9 @@ function getTabRect(border, borders, cardImage) {
    * @param {HTMLCanvasElement} canvas - The canvas element
    * @param {HTMLImageElement} cardImage - The card image
    * @param {Function} drawCanvas - Function to redraw the canvas
+   * @param {Function} updateMeasurements - Function to update measurements display
    */
-  function handleTouchMove(evt, state, canvas, cardImage, drawCanvas) {
+  function handleTouchMove(evt, state, canvas, cardImage, drawCanvas, updateMeasurements) {
     evt.preventDefault();
     if (!state.dragging) return;
     
@@ -218,5 +228,7 @@ function getTabRect(border, borders, cardImage) {
         break;
     }
     
+    // Draw canvas and update measurements
     drawCanvas();
+    updateMeasurements(state.borders);
   }

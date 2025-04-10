@@ -1,17 +1,35 @@
 /**
- * Draw the canvas with the current state
- * @param {HTMLCanvasElement} canvas - The canvas element
- * @param {CanvasRenderingContext2D} ctx - The canvas 2D context
+ * Initialize border positions on an image
  * @param {HTMLImageElement} cardImage - The card image
- * @param {Object} state - The application state
+ * @param {Object} borders - The borders object to update
  */
-function drawCanvas(canvas, ctx, cardImage, state) {
+function initializeBordersFromImage(cardImage, borders) {
+    borders.outerTop = cardImage.height * CONSTANTS.DEFAULT_OUTER_TOP_RATIO;
+    borders.outerBottom = cardImage.height * CONSTANTS.DEFAULT_OUTER_BOTTOM_RATIO;
+    borders.outerLeft = cardImage.width * CONSTANTS.DEFAULT_OUTER_LEFT_RATIO;
+    borders.outerRight = cardImage.width * CONSTANTS.DEFAULT_OUTER_RIGHT_RATIO;
+    borders.innerTop = cardImage.height * CONSTANTS.DEFAULT_INNER_TOP_RATIO;
+    borders.innerBottom = cardImage.height * CONSTANTS.DEFAULT_INNER_BOTTOM_RATIO;
+    borders.innerLeft = cardImage.width * CONSTANTS.DEFAULT_INNER_LEFT_RATIO;
+    borders.innerRight = cardImage.width * CONSTANTS.DEFAULT_INNER_RIGHT_RATIO;
+  }
+  
+  /**
+   * Draw the canvas with the current state
+   * @param {HTMLCanvasElement} canvas - The canvas element
+   * @param {CanvasRenderingContext2D} ctx - The canvas 2D context
+   * @param {HTMLImageElement} cardImage - The card image
+   * @param {Object} state - The application state
+   */
+  function drawCanvas(canvas, ctx, cardImage, state) {
     // Clear the canvas with dark background
     ctx.fillStyle = "#1a202c";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // If no image is loaded, exit early
-    if (!cardImage.complete || cardImage.naturalWidth === 0) return;
+    if (!cardImage.complete || cardImage.naturalWidth === 0) {
+      return;
+    }
     
     const { cardX, cardY, cardWidthScaled, cardHeightScaled } = getCardBox(cardImage, canvas, state.scale);
     const { borders } = state;
@@ -29,13 +47,13 @@ function drawCanvas(canvas, ctx, cardImage, state) {
       cardImage.height * state.scale);
     ctx.restore();
   
-    // Draw the card border
-    ctx.lineWidth = 2;
+    // Draw the card border - make it more visible
+    ctx.lineWidth = 3;
     ctx.strokeStyle = "#2c5282";
     ctx.strokeRect(cardX, cardY, cardWidthScaled, cardHeightScaled);
   
-    // Draw outer borders
-    ctx.lineWidth = 2;
+    // Draw outer borders with increased width
+    ctx.lineWidth = 3;
     ctx.strokeStyle = "#3182ce";
     
     // Horizontal outer borders
